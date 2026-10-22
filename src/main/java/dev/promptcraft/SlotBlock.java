@@ -1,6 +1,7 @@
 package dev.promptcraft;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -41,8 +42,23 @@ public class SlotBlock extends Block {
 
 	@Override
 	public BlockState getStateForPlacement(BlockPlaceContext ctx) {
+		return placedState();
+	}
+
+	/** The state to place, with the creation's light level. */
+	public BlockState placedState() {
 		ModDef d = def();
 		return defaultBlockState().setValue(LIGHT, d == null ? 0 : Mth.clamp(d.props.light, 0, 15));
+	}
+
+	/** on_place runs whenever the block appears: placed by a player, landed from the sky, or set by a command. */
+	@Override
+	protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+		super.onPlace(state, level, pos, oldState, movedByPiston);
+		ModDef d = def();
+		if (d == null || level.isClientSide || oldState.is(this) || !(level instanceof ServerLevel server)) return;
+		Behaviors.run(d.on("on_place"), server.getServer().createCommandSourceStack()
+				.withLevel(server).withPosition(Vec3.atCenterOf(pos)));
 	}
 
 	@Override

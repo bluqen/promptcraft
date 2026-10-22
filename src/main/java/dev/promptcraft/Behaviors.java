@@ -15,6 +15,9 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 /** Runs creation behaviours and Claude's world-edit commands. */
 public final class Behaviors {
@@ -44,7 +47,7 @@ public final class Behaviors {
 			PromptCraft.LOG.warn("Blocked command from Claude: {}", cmd);
 			return;
 		}
-		src.getServer().getCommands().performPrefixedCommand(src, cmd);
+		src.getServer().getCommands().performPrefixedCommand(src, resolveNames(cmd));
 	}
 
 	private static CommandSourceStack quiet(CommandSourceStack src) {
@@ -99,15 +102,35 @@ public final class Behaviors {
 		if (id == null || id.isBlank()) return;
 		EntityType.byString(id.contains(":") ? id : "minecraft:" + id).ifPresent(type -> {
 			Entity e = type.create(player.level());
-			if (!(e instanceof Projectile p)) {
-				if (e != null) e.discard();
-				return;
+			if (e == null) return;
+			if (e instanceof Projectile p) {
+				p.setOwner(player);
+				p.setPos(player.getX(), player.getEyeY() - 0.1, player.getZ());
+				p.shootFromRotation(player, player.getXRot(), player.getYRot(), 0f, d.nativeProps.projectile_speed, 1f);
+				if (p instanceof AbstractArrow arrow) arrow.pickup = AbstractArrow.Pickup.CREATIVE_ONLY;
+			} else {
+				// Anything else (pigs, TNT, creepers...) is launched along the look direction.
+				Vec3 look = player.getLookAngle();
+				e.setPos(player.getX() + look.x * 1.5, player.getEyeY() - 0.3 + look.y * 1.5, player.getZ() + look.z * 1.5);
+				e.setDeltaMovement(look.scale(d.nativeProps.projectile_speed));
+				e.hurtMarked = true;
 			}
-			p.setOwner(player);
-			p.setPos(player.getX(), player.getEyeY() - 0.1, player.getZ());
-			p.shootFromRotation(player, player.getXRot(), player.getYRot(), 0f, d.nativeProps.projectile_speed, 1f);
-			if (p instanceof AbstractArrow arrow) arrow.pickup = AbstractArrow.Pickup.CREATIVE_ONLY;
-			player.level().addFreshEntity(p);
+			player.level().addFreshEntity(e);
 		});
+	}
+
+	private static final Pattern CREATION_REF = Pattern.compile("\\{([^{}:\"]{1,40})\\}");
+
+	/** Swaps {Creation Name} for its registry id, so Claude can use creations it made in the same reply. */
+	static String resolveNames(String cmd) {
+		Matcher m = CREATION_REF.matcher(cmd);
+		StringBuilder sb = new StringBuilder();
+		while (m.find()) {
+			ModDef d = Defs.byName(m.group(1));
+			String id = d == null || d.isMob() ? m.group(0) : BuiltInRegistries.ITEM.getKey(Defs.itemFor(d)).toString();
+			m.appendReplacement(sb, Matcher.quoteReplacement(id));
+		}
+		m.appendTail(sb);
+		return sb.toString();
 	}
 }

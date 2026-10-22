@@ -32,6 +32,30 @@ public final class Payloads {
 		}
 	}
 
+	/** Client to server: switch the model the computer uses. */
+	public record SetModel(String model) implements CustomPacketPayload {
+		public static final Type<SetModel> TYPE = new Type<>(PromptCraft.id("set_model"));
+		public static final StreamCodec<RegistryFriendlyByteBuf, SetModel> CODEC =
+				StreamCodec.composite(ByteBufCodecs.stringUtf8(100), SetModel::model, SetModel::new);
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
+	/** Server to client: the model currently in use. */
+	public record Model(String model) implements CustomPacketPayload {
+		public static final Type<Model> TYPE = new Type<>(PromptCraft.id("model"));
+		public static final StreamCodec<RegistryFriendlyByteBuf, Model> CODEC =
+				StreamCodec.composite(ByteBufCodecs.stringUtf8(100), Model::model, Model::new);
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
 	/** Server to client: every creation in the world, as JSON. */
 	public record Sync(String json) implements CustomPacketPayload {
 		public static final Type<Sync> TYPE = new Type<>(PromptCraft.id("sync"));

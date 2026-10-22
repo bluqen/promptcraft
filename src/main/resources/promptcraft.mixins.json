@@ -3,6 +3,7 @@
 	"package": "dev.promptcraft.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
+		"MobAccessor",
 		"PackRepositoryMixin"
 	],
 	"injectors": {

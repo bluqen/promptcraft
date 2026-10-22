@@ -22,6 +22,7 @@ public class PromptCraftClient implements ClientModInitializer {
 		BlockRenderLayerMap.INSTANCE.putBlocks(RenderType.cutout(), PromptCraft.SLOT_BLOCKS);
 
 		ClientPlayNetworking.registerGlobalReceiver(Payloads.Reply.TYPE, (payload, ctx) -> ComputerScreen.onReply(payload.text()));
+		ClientPlayNetworking.registerGlobalReceiver(Payloads.Model.TYPE, (payload, ctx) -> ComputerScreen.onModel(payload.model()));
 
 		ClientPlayNetworking.registerGlobalReceiver(Payloads.Sync.TYPE, (payload, ctx) -> {
 			Defs.replaceAll(payload.json());

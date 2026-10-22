@@ -49,7 +49,7 @@ public final class Defs {
 	/** Armor slots are grouped by piece: armor_0..15 are helmets, 16..31 chestplates, and so on. */
 	public static String freeSlot(ModDef d) {
 		int from = 0;
-		int to = d.isBlock() ? PromptCraft.BLOCK_SLOTS : PromptCraft.ITEM_SLOTS;
+		int to = d.isBlock() ? PromptCraft.BLOCK_SLOTS : d.isMob() ? PromptCraft.MOB_SLOTS : PromptCraft.ITEM_SLOTS;
 		if (d.isArmor()) {
 			from = d.armorPiece() * PromptCraft.ARMOR_PER_PIECE;
 			to = from + PromptCraft.ARMOR_PER_PIECE;
@@ -67,6 +67,7 @@ public final class Defs {
 	public static Item itemFor(ModDef d) {
 		if (d.isBlock()) return PromptCraft.SLOT_BLOCKS[d.index()].asItem();
 		if (d.isArmor()) return PromptCraft.SLOT_ARMOR[d.index()];
+		if (d.isMob()) return PromptCraft.SLOT_EGGS[d.index()];
 		return PromptCraft.SLOT_ITEMS[d.index()];
 	}
 

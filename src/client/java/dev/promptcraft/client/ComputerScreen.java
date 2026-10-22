@@ -1,6 +1,8 @@
 package dev.promptcraft.client;
 
+import dev.promptcraft.ClaudeApi;
 import dev.promptcraft.Payloads;
+import net.minecraft.client.gui.components.Button;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
@@ -24,7 +26,25 @@ public class ComputerScreen extends Screen {
 
 	private record Line(String text, int color) {}
 
+	private static String model = ClaudeApi.MODELS.get(0);
+
 	private EditBox input;
+	private Button modelButton;
+
+	static void onModel(String m) {
+		model = m;
+		if (Minecraft.getInstance().screen instanceof ComputerScreen screen && screen.modelButton != null) {
+			screen.modelButton.setMessage(modelLabel());
+		}
+	}
+
+	/** "claude-opus-5-5" becomes "Model: Opus 5.5". */
+	private static Component modelLabel() {
+		String[] parts = model.replace("claude-", "").split("-");
+		String name = parts[0].substring(0, 1).toUpperCase() + parts[0].substring(1);
+		String version = parts.length > 2 ? parts[1] + "." + parts[2] : "";
+		return Component.literal("Model: " + name + " " + version);
+	}
 
 	public ComputerScreen() {
 		super(Component.literal("AI Computer"));
@@ -57,6 +77,12 @@ public class ComputerScreen extends Screen {
 		input.setMaxLength(1000);
 		input.setHint(Component.literal("Make a sword that shoots fireballs...").withStyle(ChatFormatting.DARK_GRAY));
 		addRenderableWidget(input);
+		modelButton = Button.builder(modelLabel(), b -> {
+			List<String> models = ClaudeApi.MODELS;
+			String next = models.get((models.indexOf(model) + 1) % models.size());
+			ClientPlayNetworking.send(new Payloads.SetModel(next));
+		}).bounds(x + w - 118, 23, 110, 14).build();
+		addRenderableWidget(modelButton);
 		setInitialFocus(input);
 	}
 

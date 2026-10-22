@@ -103,6 +103,12 @@ public class GeneratedPack implements PackResources {
 				}
 			}
 		}
+		for (int i = 0; i < PromptCraft.MOB_SLOTS; i++) {
+			ModDef d = Defs.get("mob_" + i);
+			String path = "slot_mob_" + i;
+			text(assets, "models/item/" + path + ".json", "{\"parent\":\"minecraft:item/generated\",\"textures\":{\"layer0\":\"promptcraft:item/" + path + "\"}}");
+			assets.put("textures/item/" + path + ".png", png(render(d, "item/spawn_egg", false)));
+		}
 		return assets;
 	}
 

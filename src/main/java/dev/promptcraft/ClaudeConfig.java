@@ -42,16 +42,27 @@ public class ClaudeConfig {
 		return Files.exists(local) ? local.toString() : "claude";
 	}
 
+	private static Path path() {
+		return FabricLoader.getInstance().getConfigDir().resolve("promptcraft.json");
+	}
+
 	static void load() {
-		Path path = FabricLoader.getInstance().getConfigDir().resolve("promptcraft.json");
 		try {
-			if (Files.exists(path)) {
-				ClaudeConfig read = GSON.fromJson(Files.readString(path), ClaudeConfig.class);
+			if (Files.exists(path())) {
+				ClaudeConfig read = GSON.fromJson(Files.readString(path()), ClaudeConfig.class);
 				if (read != null) INSTANCE = read;
 			}
-			Files.writeString(path, GSON.toJson(INSTANCE));
 		} catch (Exception e) {
-			PromptCraft.LOG.error("Could not read {}", path, e);
+			PromptCraft.LOG.error("Could not read {}", path(), e);
+		}
+		save();
+	}
+
+	static void save() {
+		try {
+			Files.writeString(path(), GSON.toJson(INSTANCE));
+		} catch (Exception e) {
+			PromptCraft.LOG.error("Could not write {}", path(), e);
 		}
 	}
 }

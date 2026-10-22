@@ -24,6 +24,46 @@ public class ModDef {
 	public String armor_base;
 	/** Optional 3D model: {"elements": [...], "display": {...}} in Minecraft's block-model format. */
 	public JsonObject model;
+	public MobSpec mob;
+	public EventSpec event;
+
+	/** A custom mob built on a vanilla one. */
+	public static class MobSpec {
+		public String base = "minecraft:zombie";
+		public double health;
+		public double damage;
+		/** Multiplier on the base mob's speed. */
+		public double speed = 1;
+		/** Size multiplier (1 = normal). */
+		public double scale = 1;
+		public boolean glow;
+		public String glow_color = "red";
+		/** Entity ids to hunt, or "player". Empty keeps the base mob's own targets. */
+		public List<String> attacks = new ArrayList<>();
+		public List<String> effects = new ArrayList<>();
+		/** Slot (mainhand, offhand, head, chest, legs, feet) to item id or {Creation Name}. */
+		public Map<String, String> equipment = new HashMap<>();
+		public int spawn_count = 1;
+	}
+
+	/** A temporary world effect, e.g. raining crystals for 30 seconds. */
+	public static class EventSpec {
+		public int duration_seconds = 30;
+		/** Commands run as and at every player each period. */
+		public List<String> commands = new ArrayList<>();
+		public int every_ticks = 20;
+		public Rain rain;
+	}
+
+	public static class Rain {
+		/** A block id, entity id, or creation name to drop from the sky. */
+		public String what;
+		public int per_second = 4;
+		public int radius = 16;
+		public int height = 20;
+		/** Damage falling blocks deal to whatever they land on. */
+		public float damage;
+	}
 
 	public static class Texture {
 		/** A vanilla texture to start from, e.g. "item/diamond_sword" or "block/stone". */
@@ -64,7 +104,15 @@ public class ModDef {
 
 	/** Gson leaves nested objects null when Claude sends null, so fill them in. */
 	public ModDef normalize() {
-		kind = "block".equals(kind) || "armor".equals(kind) ? kind : "item";
+		kind = List.of("block", "armor", "mob", "event").contains(kind) ? kind : "item";
+		if (isMob() && mob == null) mob = new MobSpec();
+		if (mob != null) {
+			if (mob.attacks == null) mob.attacks = new ArrayList<>();
+			if (mob.effects == null) mob.effects = new ArrayList<>();
+			if (mob.equipment == null) mob.equipment = new HashMap<>();
+		}
+		if (isEvent() && event == null) event = new EventSpec();
+		if (event != null && event.commands == null) event.commands = new ArrayList<>();
 		if (texture == null) texture = new Texture();
 		if (texture.palette == null) texture.palette = new HashMap<>();
 		if (texture.rows == null) texture.rows = new ArrayList<>();
@@ -84,6 +132,14 @@ public class ModDef {
 
 	public boolean isArmor() {
 		return "armor".equals(kind);
+	}
+
+	public boolean isMob() {
+		return "mob".equals(kind);
+	}
+
+	public boolean isEvent() {
+		return "event".equals(kind);
 	}
 
 	public static final List<String> ARMOR_PIECES = List.of("head", "chest", "legs", "feet");

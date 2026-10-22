@@ -1,6 +1,8 @@
 package dev.promptcraft;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
@@ -41,6 +43,8 @@ public class PromptCraft implements ModInitializer {
 	public static final int ARMOR_PER_PIECE = 16;
 	public static final ArmorItem.Type[] ARMOR_TYPES = {ArmorItem.Type.HELMET, ArmorItem.Type.CHESTPLATE, ArmorItem.Type.LEGGINGS, ArmorItem.Type.BOOTS};
 	public static final SlotArmorItem[] SLOT_ARMOR = new SlotArmorItem[ARMOR_PER_PIECE * 4];
+	public static final int MOB_SLOTS = 32;
+	public static final MobEggItem[] SLOT_EGGS = new MobEggItem[MOB_SLOTS];
 
 	public static Block COMPUTER;
 	public static CreativeModeTab TAB;
@@ -81,6 +85,10 @@ public class PromptCraft implements ModInitializer {
 					new SlotArmorItem("armor_" + i, material, ARMOR_TYPES[i / ARMOR_PER_PIECE], new Item.Properties().stacksTo(1)));
 		}
 
+		for (int i = 0; i < MOB_SLOTS; i++) {
+			SLOT_EGGS[i] = Registry.register(BuiltInRegistries.ITEM, id("slot_mob_" + i), new MobEggItem("mob_" + i, new Item.Properties()));
+		}
+
 		TAB = Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, id("main"), FabricItemGroup.builder()
 				.title(Component.translatable("itemGroup.promptcraft"))
 				.icon(() -> new ItemStack(COMPUTER))
@@ -93,11 +101,26 @@ public class PromptCraft implements ModInitializer {
 		PayloadTypeRegistry.playC2S().register(Payloads.Prompt.TYPE, Payloads.Prompt.CODEC);
 		PayloadTypeRegistry.playS2C().register(Payloads.Reply.TYPE, Payloads.Reply.CODEC);
 		PayloadTypeRegistry.playS2C().register(Payloads.Sync.TYPE, Payloads.Sync.CODEC);
+		PayloadTypeRegistry.playC2S().register(Payloads.SetModel.TYPE, Payloads.SetModel.CODEC);
+		PayloadTypeRegistry.playS2C().register(Payloads.Model.TYPE, Payloads.Model.CODEC);
 		ServerPlayNetworking.registerGlobalReceiver(Payloads.Prompt.TYPE, (payload, ctx) -> ClaudeApi.handlePrompt(ctx.player(), payload.prompt()));
+		ServerPlayNetworking.registerGlobalReceiver(Payloads.SetModel.TYPE, (payload, ctx) -> ClaudeApi.setModel(ctx.player(), payload.model()));
 
 		ServerLifecycleEvents.SERVER_STARTED.register(Defs::load);
-		ServerLifecycleEvents.SERVER_STOPPED.register(server -> Defs.clear());
-		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> sender.sendPacket(new Payloads.Sync(Defs.toJson())));
-		ServerTickEvents.END_SERVER_TICK.register(Behaviors::tick);
+		ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+			Defs.clear();
+			WorldEvents.clear();
+		});
+		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+			sender.sendPacket(new Payloads.Sync(Defs.toJson()));
+			sender.sendPacket(new Payloads.Model(ClaudeConfig.INSTANCE.model));
+		});
+		ServerTickEvents.END_SERVER_TICK.register(server -> {
+			Behaviors.tick(server);
+			WorldEvents.tick(server);
+			CustomMobs.tick(server);
+		});
+		ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> CustomMobs.configure(entity));
+		ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> CustomMobs.onDeath(entity));
 	}
 }

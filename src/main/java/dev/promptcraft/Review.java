@@ -39,6 +39,7 @@ public final class Review {
 
 	static boolean needsReview(JsonObject input) {
 		ModDef d = GSON.fromJson(input, ModDef.class).normalize();
+		if (d.isMob() || d.isEvent()) return false;
 		boolean fromScratch = !d.isArmor() && (d.texture.base == null || d.texture.base.isBlank());
 		boolean painted = d.texture.rows.stream().anyMatch(r -> r != null && r.chars().anyMatch(c -> c != '.'));
 		return fromScratch || painted || d.has3dModel();
