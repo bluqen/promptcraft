@@ -1,0 +1,1 @@
+{"variants":{"facing=north":{"model":"promptcraft:block/computer"},"facing=east":{"model":"promptcraft:block/computer","y":90},"facing=south":{"model":"promptcraft:block/computer","y":180},"facing=west":{"model":"promptcraft:block/computer","y":270}}}

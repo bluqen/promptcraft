@@ -1,0 +1,28 @@
+{
+	"schemaVersion": 1,
+	"id": "promptcraft",
+	"version": "${version}",
+	"name": "PromptCraft",
+	"description": "A computer block that connects to Claude and makes new items and blocks live, with no restart.",
+	"authors": [],
+	"license": "CC0-1.0",
+	"icon": "assets/promptcraft/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"dev.promptcraft.PromptCraft"
+		],
+		"client": [
+			"dev.promptcraft.client.PromptCraftClient"
+		]
+	},
+	"mixins": [
+		"promptcraft.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
