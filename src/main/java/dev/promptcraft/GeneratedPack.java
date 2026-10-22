@@ -59,10 +59,10 @@ public class GeneratedPack implements PackResources {
 	private Map<String, byte[]> assets;
 	private Map<String, byte[]> data;
 
-	/** Client assets; built on first use so the server never draws textures. */
-	private Map<String, byte[]> assets() {
+	/** Client assets; built on first use so the server never draws textures. Minecraft reads packs from several threads, so building is locked and the result is immutable. */
+	private synchronized Map<String, byte[]> assets() {
 		if (assets != null) return assets;
-		assets = new HashMap<>();
+		Map<String, byte[]> assets = new HashMap<>();
 		// Every slot gets a model, even empty ones, so the game doesn't log missing models for them.
 		for (int i = 0; i < PromptCraft.ITEM_SLOTS; i++) {
 			ModDef d = Defs.get("item_" + i);
@@ -109,12 +109,13 @@ public class GeneratedPack implements PackResources {
 			text(assets, "models/item/" + path + ".json", "{\"parent\":\"minecraft:item/generated\",\"textures\":{\"layer0\":\"promptcraft:item/" + path + "\"}}");
 			assets.put("textures/item/" + path + ".png", png(render(d, "item/spawn_egg", false)));
 		}
-		return assets;
+		this.assets = Map.copyOf(assets);
+		return this.assets;
 	}
 
-	private Map<String, byte[]> data() {
+	private synchronized Map<String, byte[]> data() {
 		if (data != null) return data;
-		data = new HashMap<>();
+		Map<String, byte[]> data = new HashMap<>();
 		for (int i = 0; i < PromptCraft.BLOCK_SLOTS; i++) {
 			String path = "slot_block_" + i;
 			text(data, "loot_table/blocks/" + path + ".json",
@@ -124,7 +125,8 @@ public class GeneratedPack implements PackResources {
 			String recipe = recipe(d);
 			if (recipe != null) text(data, "recipe/" + d.path() + ".json", recipe);
 		}
-		return data;
+		this.data = Map.copyOf(data);
+		return this.data;
 	}
 
 	private static String armorMaterial(ModDef d) {
